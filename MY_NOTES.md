@@ -103,3 +103,14 @@ No, I think it response in a proper way, maybe due to the files in `.github`, th
 For sure, AI thinks more calm and comprehensive than me. Especially help me due to my bad English.
 
 And I'm not familiar with Hangman games.
+
+## Auto Play
+
+### Initial analysis
+
+A function to input random things in to the console, test the game.
+
+### Design decisions
+
+Add a mode switch for player to choose
+

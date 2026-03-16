@@ -22,6 +22,7 @@ class Game:
     lives: int = 6
     state: GameState = GameState.INIT
     message: str = ""
+    mode: str = ""
 
 
 # ============================================================================
@@ -74,17 +75,17 @@ def update_game_state(secret_word: str,
         - new_lives: Updated lives count
     """
     guess = guess.strip().upper()
-    
+
     # Validation
     if len(guess) != 1 or not guess.isalpha():
         return False, "Error: Please guess a single letter.", guessed_letters, lives
-    
+
     if guess in guessed_letters:
         return False, f"You already guessed '{guess}'.", guessed_letters, lives
-    
+
     # Process valid guess
     new_guessed = guessed_letters | {guess}
-    
+
     if guess not in secret_word:
         new_lives = lives - 1
         msg = f"Wrong! '{guess}' is not in the word."
@@ -115,30 +116,41 @@ def initialize_game() -> Game:
     return game
 
 
+# Auto Play Mode
+def auto():
+    prob = random.random()
+    if prob >= 0.75:
+        num = random.randint(0, 2)
+        rand = random.sample('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-=!@#$%^&*()_+', num)
+        return "".join(rand)
+    else:
+        return random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-=!@#$%^&*()_+')
+
+
 # ============================================================================
 # UI LAYER (I/O only, calls logic functions)
 # ============================================================================
 
 def display_game_state(game: Game) -> None:
     """Display current game state to the player."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print(f"Word: {get_masked_word(game.secret_word, game.guessed_letters)}")
     print(f"Lives: {game.lives}/{game.max_lives}")
     guessed_str = ", ".join(sorted(game.guessed_letters)) if game.guessed_letters else "None"
     print(f"Guessed letters: {guessed_str}")
     if game.message:
         print(f"➜ {game.message}")
-    print("="*60)
+    print("=" * 60)
 
 
 def display_end_game(game: Game) -> None:
     """Display the game result."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     if game.state == GameState.WON:
         print(f"🎉 You won! The word was: {game.secret_word}")
     else:
         print(f"💀 You lost! The word was: {game.secret_word}")
-    print("="*60)
+    print("=" * 60)
 
 
 def get_player_guess() -> str:
@@ -161,18 +173,31 @@ def process_turn(game: Game) -> None:
     Process one turn: get input, update state, check end conditions.
     Mutates game object.
     """
-    guess = get_player_guess()
+    if game.mode == "auto":
+        guess = auto()
+    elif game.mode == "normal":
+        guess = get_player_guess()
+    else:
+        print("\tEntering Auto Play Mode by enter 'a'")
+        print("*-press anything else to continue Normal Mode-*")
+        mode = input()
+        if mode == "a":
+            game.mode = "auto"
+            guess = auto()
+        else:
+            game.mode = "normal"
+            guess = get_player_guess()
     is_valid, message, new_guessed, new_lives = update_game_state(
         game.secret_word,
         game.guessed_letters,
         guess,
         game.lives
     )
-    
+
     game.message = message
     game.guessed_letters = new_guessed
     game.lives = new_lives
-    
+
     # Check win/loss conditions
     if check_win(game.secret_word, game.guessed_letters):
         game.state = GameState.WON
@@ -192,7 +217,7 @@ def run_game_state(game: Game) -> None:
         GameState.REPLAY_PROMPT: lambda g: replay_handler(g),
         GameState.EXIT: lambda g: None,
     }
-    
+
     # Process states until EXIT
     while game.state != GameState.EXIT:
         handler = state_handlers.get(game.state, lambda g: None)
@@ -201,6 +226,7 @@ def run_game_state(game: Game) -> None:
 
 def replay_handler(game: Game) -> None:
     """Handle replay prompt and transition to next state."""
+    game.mode = ""
     if ask_replay():
         new_game = initialize_game()
         # Copy reference to same object to maintain loop
@@ -228,5 +254,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
+    # print(auto())
